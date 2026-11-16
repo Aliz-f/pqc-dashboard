@@ -1678,7 +1678,11 @@ function CustomerReport({
   const customerRecords = records.filter((record) => record.customerScope === "The Organization");
   const metrics = calculateCustomerMetrics(records);
   const traffic = calculateTrafficMetrics(customerRecords);
-  const unavailable = scenario === "empty" || scenario === "invalid";
+  const unavailable = scenario === "empty" || scenario === "invalid" || scenario === "stale";
+  const volumeDataComplete =
+    customerRecords.length > 0 &&
+    customerRecords.every((record) => traffic.knownConnectionIds.has(record.id));
+  const volumeUnavailable = unavailable || !volumeDataComplete || traffic.totalVolume === 0;
   const customerClassical = customerRecords.filter((record) => record.protocol === "Classical");
 
   return (
@@ -1739,7 +1743,7 @@ function CustomerReport({
                 : `${metrics.mlkem} of ${metrics.total} eligible customer connections use ML-KEM.`}
             </p>
             <div className="report-progress">
-              <span style={{ width: `${metrics.coverage ?? 0}%` }} />
+              <span style={{ width: `${unavailable ? 0 : (metrics.coverage ?? 0)}%` }} />
             </div>
             <small>PQC connections / Eligible customer connections</small>
           </article>
@@ -1749,13 +1753,13 @@ function CustomerReport({
             </div>
             <span>Data volume associated with classical connections</span>
             <strong>
-              {unavailable || traffic.classicalShare === null
+              {volumeUnavailable || traffic.classicalShare === null
                 ? "Not available"
                 : `${traffic.classicalShare.toFixed(1)}%`}
             </strong>
             <p>
               {unavailable
-                ? "Valid customer volume data is required."
+                ? "A current, complete customer-scoped volume dataset is required."
                 : `${traffic.classicalVolume} GB of ${traffic.totalVolume} GB in the sample period.`}
             </p>
             <div className="measure-distinction">
@@ -1787,10 +1791,10 @@ function CustomerReport({
             </div>
             <Badge tone="amber">Potential exposure · Not a detected attack</Badge>
           </div>
-          {unavailable ? (
+          {volumeUnavailable ? (
             <EmptyState
               title="Exposure calculation unavailable"
-              description="Valid customer-scoped volume records are required."
+              description="A current and complete set of customer-scoped volume records is required."
             />
           ) : (
             <div className="report-exposure-grid">
@@ -1813,7 +1817,7 @@ function CustomerReport({
                         <td>{item.total} GB</td>
                         <td>{item.potentiallyExposed} GB</td>
                         <td>
-                          <strong>{item.percentage?.toFixed(1)}%</strong>
+                          <strong>{item.percentage === null ? "Not available" : `${item.percentage.toFixed(1)}%`}</strong>
                         </td>
                       </tr>
                     ))}
@@ -1828,15 +1832,16 @@ function CustomerReport({
                         <strong>{traffic.classicalVolume} GB</strong>
                       </td>
                       <td>
-                        <strong>{traffic.classicalShare?.toFixed(1)}%</strong>
+                        <strong>{traffic.classicalShare === null ? "Not available" : `${traffic.classicalShare.toFixed(1)}%`}</strong>
                       </td>
                     </tr>
                   </tbody>
                 </table>
                 <div className="report-data-coverage">
-                  Volume coverage: supplied for all 5 eligible customer connections in this
-                  illustrative scenario. If any required customer volume is missing, the complete
-                  exposure percentage must be withheld or explicitly qualified.
+                  Volume coverage: supplied for {traffic.knownConnectionIds.size} of{" "}
+                  {customerRecords.length} eligible customer connections in this illustrative
+                  scenario. Missing records withhold the overall volume percentage; absence of
+                  an expected data-class entry also requires a data-quality review.
                 </div>
               </div>
               <div className="exposure-bars">
