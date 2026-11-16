@@ -1,0 +1,21 @@
+name: Sprint 2 V2 verification
+
+on:
+  push:
+    branches: [v2]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run synthetic-data and edge-case tests
+        run: node --experimental-strip-types --test tests/metrics.test.ts
+      - name: Compile production dashboard
+        run: npm run build
