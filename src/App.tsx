@@ -714,7 +714,9 @@ function TrafficExposure({ records, scenario }: { records: Connection[]; scenari
   const classicalVolumeRows = trafficVolumeRecords.filter(
     (record) => connectionMap.get(record.connectionId)?.protocol === "Classical",
   );
-  const unavailable = scenario === "empty" || scenario === "invalid";
+  const unavailable =
+    scenario === "empty" || scenario === "invalid" || scenario === "stale" ||
+    !traffic.complete;
 
   return (
     <section className="exposure-section panel">
@@ -1679,9 +1681,7 @@ function CustomerReport({
   const metrics = calculateCustomerMetrics(records);
   const traffic = calculateTrafficMetrics(customerRecords);
   const unavailable = scenario === "empty" || scenario === "invalid" || scenario === "stale";
-  const volumeDataComplete =
-    customerRecords.length > 0 &&
-    customerRecords.every((record) => traffic.knownConnectionIds.has(record.id));
+  const volumeDataComplete = traffic.complete;
   const volumeUnavailable = unavailable || !volumeDataComplete || traffic.totalVolume === 0;
   const customerClassical = customerRecords.filter((record) => record.protocol === "Classical");
 
@@ -1774,7 +1774,7 @@ function CustomerReport({
             <span>Customer connection scope</span>
             <strong>{unavailable ? "—" : metrics.total}</strong>
             <p>
-              {metrics.mlkem} ML-KEM · {metrics.classical} classical
+              {unavailable ? "Assessment unavailable" : `${metrics.mlkem} ML-KEM · ${metrics.classical} classical`}
             </p>
             <small>Internal-only records excluded</small>
           </article>
