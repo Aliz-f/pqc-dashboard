@@ -55,3 +55,14 @@ The V2 design addresses these perspectives through separate views and qualified 
 The proposed 2027 contract amendment, simulated accepted exceptions, alternative routing/workarounds, and illustrative Green/Amber/Red rules are **not** real approvals. Evidence of functionality and automated tests does not establish teacher/PO acceptance.
 
 **References:** [planning and scope](01-planning-and-transition.md), [risk register](02-risk-register.md), [change log](04-change-log.md), [review](../team-review-2026-11-16.md).
+
+
+## Sprint 2 retrospective decision handoff — reported by the team
+
+The team reports completing the Sprint 2 Review and Retrospective and records three positive changes: a more reliable meeting schedule and balanced workload; good remote collaboration with fifth member Tancredi, which improved the work; and more synchronized Jira task/process management. The three agreed-for-tracking improvement areas have been converted into Sprint 3 tasks, with current Jira assignees and explicit completion measures:
+
+- **D14 / A01:** capture actual browser-demo acceptance artifacts for stakeholder journeys — [MEM-97](https://aliz.atlassian.net/browse/MEM-97), Alireza, before MEM-86.
+- **D15 / A02:** map cross-sprint dependencies, ownership and remote handoffs before implementation — [MEM-98](https://aliz.atlassian.net/browse/MEM-98), Masoud, during MEM-85 planning.
+- **D16 / A03:** record requirement changes, impact, alternatives and pending Product Owner decisions when they arise — [MEM-99](https://aliz.atlassian.net/browse/MEM-99), Niko, beginning MEM-85.
+
+The specific meeting timestamp and participants are not recorded here because none were supplied. The owners named are the issue assignees; the team can adjust them at Sprint 3 Planning. Full details: [Sprint 2 Retrospective](../retrospective-and-sprint3-actions.md).
