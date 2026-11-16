@@ -320,13 +320,31 @@ export function calculateTrafficMetrics(
 ) {
   const connectionMap = new Map(records.map((record) => [record.id, record]));
   const included = volumeRecords.filter((record) => connectionMap.has(record.connectionId));
-  const classical = included.filter(
+  const validVolumeRows = included.filter(
+    (record) => Number.isFinite(record.transferredVolume) && record.transferredVolume >= 0 &&
+      record.volumeUnit === "GB",
+  );
+  const rowKey = (connectionId: string, dataClass: DataClass) =>
+    `${connectionId}::${dataClass}`;
+  const foundKeys = new Set(validVolumeRows.map((record) =>
+    rowKey(record.connectionId, record.dataClass),
+  ));
+  const missingClassEntries = records.flatMap((record) =>
+    (["Personal data", "Operational data"] as DataClass[])
+      .filter((dataClass) => !foundKeys.has(rowKey(record.id, dataClass)))
+      .map((dataClass) => ({ connectionId: record.id, dataClass })),
+  );
+  const complete = records.length > 0 &&
+    included.length === validVolumeRows.length &&
+    foundKeys.size === validVolumeRows.length &&
+    missingClassEntries.length === 0;
+  const classical = validVolumeRows.filter(
     (record) => connectionMap.get(record.connectionId)?.protocol === "Classical",
   );
-  const totalVolume = included.reduce((sum, record) => sum + record.transferredVolume, 0);
+  const totalVolume = validVolumeRows.reduce((sum, record) => sum + record.transferredVolume, 0);
   const classicalVolume = classical.reduce((sum, record) => sum + record.transferredVolume, 0);
   const byClass = (["Personal data", "Operational data"] as DataClass[]).map((dataClass) => {
-    const classRecords = included.filter((record) => record.dataClass === dataClass);
+    const classRecords = validVolumeRows.filter((record) => record.dataClass === dataClass);
     const classClassical = classical.filter((record) => record.dataClass === dataClass);
     const total = classRecords.reduce((sum, record) => sum + record.transferredVolume, 0);
     const potentiallyExposed = classClassical.reduce(
@@ -337,15 +355,17 @@ export function calculateTrafficMetrics(
       dataClass,
       total,
       potentiallyExposed,
-      percentage: total === 0 ? null : (potentiallyExposed / total) * 100,
+      percentage: !complete || total === 0 ? null : (potentiallyExposed / total) * 100,
     };
   });
 
   return {
     totalVolume,
     classicalVolume,
-    classicalShare: totalVolume === 0 ? null : (classicalVolume / totalVolume) * 100,
+    classicalShare: !complete || totalVolume === 0 ? null : (classicalVolume / totalVolume) * 100,
+    complete,
+    missingClassEntries,
     byClass,
-    knownConnectionIds: new Set(included.map((record) => record.connectionId)),
+    knownConnectionIds: new Set(validVolumeRows.map((record) => record.connectionId)),
   };
 }
