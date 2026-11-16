@@ -115,3 +115,35 @@ test("invalid negative or nonfinite values invalidate volume share", () => {
     assert.equal(result.classicalShare, null);
   }
 });
+
+test("migration blocker totals reconcile with synthetic connection records", () => {
+  const fallback = standardConnections.filter((record) => record.protocol === "Classical");
+  const types = [
+    "Hardware replacement pending", "Software upgrade pending",
+    "Compatibility issue", "Unknown blocker",
+  ];
+  const counts = types.map((blocker) => fallback.filter(
+    (record) => (record.primaryMigrationBlocker ?? "Unknown blocker") === blocker,
+  ).length);
+  assert.deepEqual(counts, [2, 1, 1, 0]);
+  assert.equal(counts.reduce((sum, count) => sum + count, 0), fallback.length);
+  const customer = fallback.filter((record) => record.customerScope === "The Organization");
+  assert.equal(customer.length, 2);
+  assert.deepEqual(
+    customer.map((record) => record.primaryMigrationBlocker).sort(),
+    ["Compatibility issue", "Hardware replacement pending"],
+  );
+});
+
+test("fallback exception fields retain unknown impacts and simulated approvals", () => {
+  const fallback = standardConnections.filter((record) => record.protocol === "Classical");
+  const internal = fallback.find((record) => record.id === "CN-008")!;
+  assert.equal(internal.monitoringImpactIfDisabled, "Not available");
+  assert.equal(internal.customerScope, "Internal only");
+  const accepted = fallback.find((record) =>
+    record.simulatedExceptionStatus === "Accepted in simulation",
+  )!;
+  assert.equal(accepted.protocol, "Classical");
+  assert.equal(accepted.customerScope, "The Organization");
+  assert.equal(accepted.expectedReplacementAvailability, "2028");
+});
