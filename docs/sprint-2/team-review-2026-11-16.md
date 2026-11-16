@@ -60,3 +60,14 @@ These are proposals for the retrospective. The team should decide the owners and
 V1 showed our organization's broad PQC transition. V2 can also explain this customer's specific position, the class of data associated with remaining classical connections, and the conflict between an accelerated contractual target and legacy replacement timing. The next review should focus on demonstrating the working increment, agreeing on the customer-facing message, and deciding how to improve our process before Sprint 3.
 
 **Evidence:** Sprint 1 report; Mikko Mäkitalo's course instructions, persona cards, and Sprint 2 slides; Jira MEM; GitHub `main`/`v2`; [successful CI run](https://github.com/Aliz-f/pqc-dashboard/actions/runs/43917067470).
+
+
+## Sprint Review meeting confirmation and handoff
+
+After this written report was prepared, the team confirmed that **the Sprint 2 Review was held**. The detailed product analysis, implementation evidence, CI checks and remaining acceptance distinctions are described above. The team did not supply the precise meeting time, participant list, verbatim feedback or formal Product Owner sign-off for this record, so those details are not attributed to anyone.
+
+The team also confirmed that the **Sprint 2 Retrospective was held**. The key improvements reported were (1) more predictable meeting scheduling and a better balance of work, (2) better collaboration with Tancredi as the fifth member working remotely, improving the quality of the group's output, and (3) more consistent use of Jira for tasks and Scrum process tracking.
+
+The retrospective identified three practical Sprint 3 follow-ups: manual/browser acceptance evidence ([MEM-97](https://aliz.atlassian.net/browse/MEM-97)), cross-sprint dependency and handoff clarity ([MEM-98](https://aliz.atlassian.net/browse/MEM-98)), and recording stakeholder changes/decisions closer to when they occur ([MEM-99](https://aliz.atlassian.net/browse/MEM-99)). The full meeting outcome and action criteria are documented in [Sprint 2 Retrospective](retrospective-and-sprint3-actions.md).
+
+This confirms **the team's review activity**; it is not a statement that the lecturer/PO accepted all three outstanding stories or the proposed contract amendment.
