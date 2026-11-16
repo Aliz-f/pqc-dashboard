@@ -36,3 +36,10 @@ The `v2` branch extends `main` and includes source-based customer filter, blocke
 - After the **Retrospective**, document agreed improvement owners and Sprint 3 follow-up.
 
 **Related:** [planning](01-planning-and-transition.md), [risks](02-risk-register.md), [decisions](03-decision-log.md), [review](../team-review-2026-11-16.md).
+
+
+## C06 — Sprint 2 retrospective process improvements (team report, 16 November 2026)
+
+Following the reported Sprint 2 Review and Retrospective, the group described improved meeting scheduling and work distribution, good collaboration with remotely participating fifth member Tancredi, and better alignment between real work and Jira issue/process tracking. This updates earlier concerns C01/C02 about hybrid participation; it does not imply a specific lecturer/group-size approval.
+
+Three follow-up improvements are tracked for Sprint 3: [MEM-97](https://aliz.atlassian.net/browse/MEM-97) (browser acceptance evidence), [MEM-98](https://aliz.atlassian.net/browse/MEM-98) (dependency/owner handoff matrix), and [MEM-99](https://aliz.atlassian.net/browse/MEM-99) (timely change and decision documentation). The **Sprint 2 Retrospective** is documented [here](../retrospective-and-sprint3-actions.md); assess results in MEM-87. This is a process-change record, not a new customer requirement.
