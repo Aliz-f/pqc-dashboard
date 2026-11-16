@@ -16,6 +16,6 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Run synthetic-data and edge-case tests
-        run: node --experimental-strip-types --test tests/metrics.test.ts
+        run: node --experimental-strip-types --test tests/metrics.test.ts tests/ui-contract.test.mjs
       - name: Compile production dashboard
         run: npm run build
