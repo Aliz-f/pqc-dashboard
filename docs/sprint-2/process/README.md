@@ -17,3 +17,8 @@ The files are supporting documents for Jira:
 - [MEM-82 Sprint Review](https://aliz.atlassian.net/browse/MEM-82)
 
 **What is not claimed:** A newly held planning meeting, an accepted contract amendment, a Product Owner's final approval, an agreed numerical risk matrix, or actual retrospective decisions. Those require evidence from the people involved. The documents instead distinguish what was recorded by the team, what is visible in Jira/code, and which decisions still need confirmation.
+
+
+5. **[Sprint 2 Retrospective and Sprint 3 actions](../retrospective-and-sprint3-actions.md)** — team-confirmed scheduling, remote collaboration and Jira improvements; three measurable actions tracked as MEM-97–99 in Sprint 3.
+
+The team subsequently reported that both the Sprint 2 Review and Retrospective were held; formal Product Owner acceptance of individual stories is a separate step.
