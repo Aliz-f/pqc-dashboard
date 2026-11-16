@@ -1,14 +1,28 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  calculateCustomerMetrics,
   calculateMetrics,
+  calculateTrafficMetrics,
   recordsForScenario,
   scenarios,
+  trafficVolumeRecords,
   type Connection,
+  type MigrationBlocker,
   type Protocol,
   type ScenarioId,
 } from "./data";
 
-type Page = "overview" | "connections" | "migration" | "guide" | "system";
+type Page =
+  | "overview"
+  | "connections"
+  | "migration"
+  | "blockers"
+  | "exceptions"
+  | "customer-report"
+  | "guide"
+  | "traceability"
+  | "process"
+  | "system";
 type ProtocolFilter = "All" | Protocol;
 
 function Icon({
@@ -28,7 +42,8 @@ function Icon({
     | "shield"
     | "menu"
     | "close"
-    | "check";
+    | "check"
+    | "file";
   size?: number;
 }) {
   const paths: Record<string, ReactNode> = {
@@ -89,6 +104,12 @@ function Icon({
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     check: <path d="m5 12 4 4L19 6" />,
+    file: (
+      <>
+        <path d="M6 3h8l4 4v14H6z" />
+        <path d="M14 3v5h5M9 13h6M9 17h6" />
+      </>
+    ),
   };
   return (
     <svg
@@ -200,7 +221,7 @@ function Sidebar({
     id: Page;
     label: string;
     caption: string;
-    icon: "overview" | "connections" | "migration";
+    icon: "overview" | "connections" | "migration" | "shield";
   }[] = [
     { id: "overview", label: "Overview", caption: "Executive view", icon: "overview" },
     {
@@ -210,6 +231,13 @@ function Sidebar({
       icon: "connections",
     },
     { id: "migration", label: "Migration", caption: "Coverage view", icon: "migration" },
+    { id: "blockers", label: "Blockers", caption: "Migration dependencies", icon: "migration" },
+    {
+      id: "exceptions",
+      label: "Fallback exceptions",
+      caption: "Continuity trade-offs",
+      icon: "shield",
+    },
   ];
 
   return (
@@ -222,14 +250,14 @@ function Sidebar({
           </div>
           <div>
             <strong>PQC Monitor</strong>
-            <span>Sprint 1 prototype</span>
+            <span>Sprint 2 prototype</span>
           </div>
           <button className="mobile-close" onClick={onClose} aria-label="Close navigation">
             <Icon name="close" />
           </button>
         </div>
-        <nav aria-label="Stakeholder views">
-          <div className="nav-label">Workspace</div>
+        <nav aria-label="Internal dashboard">
+          <div className="nav-label">Internal dashboard</div>
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -246,6 +274,20 @@ function Sidebar({
               </span>
             </button>
           ))}
+          <div className="nav-label nav-label-secondary">Customer reporting</div>
+          <button
+            className={`nav-item customer-nav-item ${page === "customer-report" ? "active" : ""}`}
+            onClick={() => {
+              onNavigate("customer-report");
+              onClose();
+            }}
+          >
+            <Icon name="file" size={19} />
+            <span>
+              <strong>Customer report preview</strong>
+              <small>Customer-safe presentation</small>
+            </span>
+          </button>
         </nav>
         <div className="sidebar-spacer" />
         <div className="sidebar-scope">
@@ -267,11 +309,27 @@ function Sidebar({
           </button>
           <button
             onClick={() => {
+              onNavigate("traceability");
+              onClose();
+            }}
+          >
+            S2 requirements traceability
+          </button>
+          <button
+            onClick={() => {
               onNavigate("system");
               onClose();
             }}
           >
             Design system
+          </button>
+          <button
+            onClick={() => {
+              onNavigate("process");
+              onClose();
+            }}
+          >
+            Process &amp; evidence
           </button>
         </div>
         <div className="sidebar-footer">
@@ -301,7 +359,12 @@ function Header({
     overview: "Executive overview",
     connections: "Connection security",
     migration: "Migration coverage",
+    blockers: "Migration blockers",
+    exceptions: "Classical fallback exceptions",
+    "customer-report": "Customer report preview",
     guide: "Prototype guide",
+    traceability: "Sprint 2 requirements traceability",
+    process: "Sprint 1 — Process & Evidence",
     system: "Design system",
   };
   return (
@@ -411,6 +474,24 @@ function Overview({
         title="PQC Migration Overview"
         description="A concise view of migration progress, residual exposure, and where management attention may be needed."
       />
+      <section className="customer-request-banner">
+        <div className="request-label">
+          <span>Sprint 2 customer request</span>
+          <Badge tone="amber">Contract amendment pending</Badge>
+        </div>
+        <div className="request-deadline">
+          <span>Proposed customer PQC deadline</span>
+          <strong>31 Dec 2027</strong>
+          <small>Previous proposed schedule: 31 Dec 2030</small>
+        </div>
+        <p>
+          The Organization has requested customer-scoped readiness and potential HNDL exposure
+          reporting. This request is not an accepted contractual commitment.
+        </p>
+        <button className="button button-primary" onClick={() => onNavigate("customer-report")}>
+          Open customer report preview <Icon name="arrow" size={16} />
+        </button>
+      </section>
       <section className={`status-hero status-${status.toLowerCase()}`}>
         <div className="status-main">
           <div className="status-kicker">
@@ -646,6 +727,122 @@ function ConnectionDetail({ record, onClose }: { record: Connection; onClose: ()
   );
 }
 
+function TrafficExposure({ records, scenario }: { records: Connection[]; scenario: ScenarioId }) {
+  const customerRecords = records.filter((record) => record.customerScope === "The Organization");
+  const traffic = calculateTrafficMetrics(customerRecords);
+  const connectionMap = new Map(customerRecords.map((record) => [record.id, record]));
+  const classicalVolumeRows = trafficVolumeRecords.filter(
+    (record) => connectionMap.get(record.connectionId)?.protocol === "Classical",
+  );
+  const unavailable = scenario === "empty" || scenario === "invalid";
+
+  return (
+    <section className="exposure-section panel">
+      <div className="sprint-section-heading">
+        <div>
+          <span className="sprint-tag">Sprint 2 · MEM-36, MEM-37, MEM-38</span>
+          <h2>Classical Fallback Traffic Exposure</h2>
+          <p>
+            A static, documented estimate for customer-scoped records with available synthetic
+            volume data—not live traffic telemetry.
+          </p>
+        </div>
+        <Badge tone="blue">Synthetic data</Badge>
+      </div>
+      <div className="exposure-layout">
+        <article className="traffic-metric">
+          <span>Classical Fallback Traffic</span>
+          <strong>{unavailable ? "Unknown" : `${traffic.classicalVolume} GB`}</strong>
+          <div className="metric-scope">
+            <Icon name="database" size={15} />
+            <span>
+              <b>Scope</b>
+              The Organization · records with available volume data
+            </span>
+          </div>
+          <p>
+            Transferred volume associated with customer connections using classical key
+            establishment during the sample assessment period.
+          </p>
+        </article>
+        <div className="traffic-explanation">
+          <span className="decision-icon amber">
+            <Icon name="shield" />
+          </span>
+          <div>
+            <span className="eyebrow">Potential exposure, not detection</span>
+            <h3>Classical traffic may face future-decryption risk</h3>
+            <p>
+              Traffic using classical key establishment may be exposed to future
+              Harvest-Now-Decrypt-Later risks. This metric does not indicate that data was stolen,
+              harvested, or intercepted.
+            </p>
+          </div>
+        </div>
+        <div className="calculation-note">
+          <span>Annotated calculation</span>
+          <code>
+            C-04 (25 + 10 GB) + C-05 (15 + 10 GB)
+            <b>= 60 GB</b>
+          </code>
+          <p>
+            Personal and operational records are summed once each. Connections remain uniquely
+            counted in connection metrics.
+          </p>
+        </div>
+      </div>
+      {unavailable ? (
+        <EmptyState
+          title="Traffic volume not available"
+          description="The selected scenario does not contain valid volume inputs, so no total is presented."
+        />
+      ) : (
+        <div className="compact-table-wrap">
+          <table className="compact-table">
+            <thead>
+              <tr>
+                <th>Connection</th>
+                <th>Key establishment</th>
+                <th>Data class</th>
+                <th>Transferred volume</th>
+                <th>Measurement period</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classicalVolumeRows.map((volume) => (
+                <tr key={`${volume.connectionId}-${volume.dataClass}`}>
+                  <td>
+                    <strong>{connectionMap.get(volume.connectionId)?.customerRef}</strong>
+                    <small>{volume.connectionId}</small>
+                  </td>
+                  <td>
+                    <ProtocolBadge protocol="Classical" />
+                  </td>
+                  <td>{volume.dataClass}</td>
+                  <td className="tabular">
+                    <strong>
+                      {volume.transferredVolume} {volume.volumeUnit}
+                    </strong>
+                  </td>
+                  <td>{volume.monitoringPeriod}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="scope-warning">
+        <Icon name="info" size={16} />
+        <span>
+          Internal-only classical connections do not have supplied volume records. Therefore, 60 GB
+          is a selected-customer subtotal and must not be described as company-wide classical
+          traffic.
+        </span>
+      </div>
+    </section>
+  );
+}
+
 function Connections({
   records,
   scenario,
@@ -721,6 +918,8 @@ function Connections({
           tone="amber"
         />
       </section>
+
+      <TrafficExposure records={records} scenario={scenario} />
 
       <section className="panel table-panel">
         <div className="table-toolbar">
@@ -1095,13 +1294,943 @@ function Migration({
   );
 }
 
+type ScopeFilter = "All connections" | "The Organization" | "Internal only";
+
+function ScopeTabs({
+  value,
+  onChange,
+  counts,
+}: {
+  value: ScopeFilter;
+  onChange: (value: ScopeFilter) => void;
+  counts: Record<ScopeFilter, number>;
+}) {
+  return (
+    <div className="scope-tabs" role="group" aria-label="Connection scope">
+      {(["All connections", "The Organization", "Internal only"] as ScopeFilter[]).map((scope) => (
+        <button
+          key={scope}
+          className={value === scope ? "selected" : ""}
+          onClick={() => onChange(scope)}
+        >
+          <span>{scope === "The Organization" ? "Customer data" : scope}</span>
+          <b>{counts[scope]}</b>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const blockerOrder: MigrationBlocker[] = [
+  "Hardware replacement pending",
+  "Software upgrade pending",
+  "Compatibility issue",
+  "Unknown blocker",
+];
+
+function MigrationBlockers({
+  records,
+  scenario,
+  onNavigate,
+}: {
+  records: Connection[];
+  scenario: ScenarioId;
+  onNavigate: (page: Page) => void;
+}) {
+  const [scope, setScope] = useState<ScopeFilter>("All connections");
+  const unmigrated = records.filter((record) => record.protocol === "Classical");
+  const counts: Record<ScopeFilter, number> = {
+    "All connections": unmigrated.length,
+    "The Organization": unmigrated.filter((record) => record.customerScope === "The Organization")
+      .length,
+    "Internal only": unmigrated.filter((record) => record.customerScope === "Internal only").length,
+  };
+  const scoped =
+    scope === "All connections"
+      ? unmigrated
+      : unmigrated.filter((record) => record.customerScope === scope);
+  const blockerCounts = blockerOrder.map((blocker) => ({
+    blocker,
+    count: scoped.filter(
+      (record) => (record.primaryMigrationBlocker ?? "Unknown blocker") === blocker,
+    ).length,
+  }));
+  const hasDeadlineConflict = scoped.some(
+    (record) =>
+      record.customerScope === "The Organization" &&
+      record.expectedReplacementAvailability === "2028",
+  );
+  const unavailable = scenario === "invalid";
+
+  return (
+    <>
+      <PageIntro
+        eyebrow="Migration management workspace · Sprint 2"
+        title="Migration Blockers"
+        description="Understand why assessed connections remain on classical key establishment without mixing customer and internal-only scopes."
+      />
+      <div className="sprint-context-bar">
+        <span>
+          <b>Sprint 2 increment</b>
+          MEM-17 · MEM-46–49
+        </span>
+        <p>
+          One primary blocker per unmigrated connection prevents double-counting in category totals.
+        </p>
+      </div>
+      <ScopeTabs value={scope} onChange={setScope} counts={counts} />
+      {hasDeadlineConflict && (
+        <section className="deadline-conflict" role="status">
+          <span className="deadline-icon">
+            <Icon name="clock" size={22} />
+          </span>
+          <div>
+            <span className="eyebrow">Potential schedule conflict</span>
+            <h2>Replacement availability extends beyond the proposed deadline</h2>
+            <p>
+              Some customer-data connections may depend on certified replacements expected in 2028,
+              after the proposed 31 December 2027 migration deadline.
+            </p>
+          </div>
+          <div className="deadline-dates">
+            <span>
+              Proposed customer deadline <strong>31 Dec 2027</strong>
+            </span>
+            <Icon name="arrow" size={18} />
+            <span>
+              Expected replacement <strong>2028</strong>
+            </span>
+          </div>
+        </section>
+      )}
+      <section className="blocker-summary">
+        {blockerCounts.map(({ blocker, count }, index) => (
+          <article key={blocker} className={count > 0 ? "has-count" : ""}>
+            <span className={`blocker-symbol blocker-symbol-${index + 1}`}>
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div>
+              <strong>{count}</strong>
+              <span>{blocker}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+      <section className="panel blocker-table-panel">
+        <div className="table-toolbar">
+          <div>
+            <span className="eyebrow">Primary blocker inventory</span>
+            <h2>
+              {unavailable ? "Blocker data unavailable" : `${scoped.length} unmigrated connections`}
+            </h2>
+            <p>
+              Scope: {scope === "The Organization" ? "connections carrying customer data" : scope}
+            </p>
+          </div>
+          <Badge tone={scope === "The Organization" ? "blue" : "neutral"}>
+            {scope === "The Organization" ? "Customer scoped" : scope}
+          </Badge>
+        </div>
+        {unavailable || scoped.length === 0 ? (
+          <EmptyState
+            title={unavailable ? "Blocker assessment unavailable" : "No blockers in this scope"}
+            description={
+              unavailable
+                ? "Primary blocker inputs failed validation and are not presented."
+                : "No classical connections remain in the selected prototype scope."
+            }
+          />
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Connection ID</th>
+                  <th>Scope</th>
+                  <th>Primary blocker</th>
+                  <th>Migration status</th>
+                  <th>Expected availability</th>
+                  <th>Deadline relevance</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scoped.map((record) => (
+                  <tr key={record.id}>
+                    <td>
+                      <strong>{record.customerRef ?? record.id}</strong>
+                      <small>{record.customerRef ? record.id : "Synthetic connection"}</small>
+                    </td>
+                    <td>
+                      <Badge
+                        tone={record.customerScope === "The Organization" ? "blue" : "neutral"}
+                      >
+                        {record.customerScope === "The Organization"
+                          ? "Customer data"
+                          : "Internal only"}
+                      </Badge>
+                    </td>
+                    <td>
+                      <strong>{record.primaryMigrationBlocker ?? "Unknown blocker"}</strong>
+                    </td>
+                    <td>
+                      <Badge tone="amber">Classical · Not migrated</Badge>
+                    </td>
+                    <td>{record.expectedReplacementAvailability ?? "Not available"}</td>
+                    <td>
+                      {record.customerScope === "The Organization" ? (
+                        <span className="deadline-relevance">Proposed 2027 deadline applies</span>
+                      ) : (
+                        <span className="muted">Customer deadline not applicable</span>
+                      )}
+                    </td>
+                    <td>{record.notes ?? "Not available"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      <section className="content-grid blocker-bottom-grid">
+        <article className="panel options-panel">
+          <span className="eyebrow">Options for discussion</span>
+          <h2>Planning topics—not approved actions</h2>
+          <div className="option-chips">
+            <span>Workaround assessment</span>
+            <span>Alternative routing analysis</span>
+            <span>Schedule escalation</span>
+          </div>
+          <p>
+            These options have not been approved or technically validated. The proposed contract
+            amendment remains pending.
+          </p>
+        </article>
+        <aside className="panel next-view-panel">
+          <Icon name="shield" />
+          <div>
+            <span className="eyebrow">Related workflow</span>
+            <h2>Review fallback exceptions</h2>
+            <p>Compare service continuity dependencies with residual security exposure.</p>
+          </div>
+          <button className="button button-primary" onClick={() => onNavigate("exceptions")}>
+            Open exceptions <Icon name="arrow" size={16} />
+          </button>
+        </aside>
+      </section>
+    </>
+  );
+}
+
+function FallbackExceptions({
+  records,
+  scenario,
+  onNavigate,
+}: {
+  records: Connection[];
+  scenario: ScenarioId;
+  onNavigate: (page: Page) => void;
+}) {
+  const [scope, setScope] = useState<ScopeFilter>("All connections");
+  const exceptions = records.filter((record) => record.protocol === "Classical");
+  const counts: Record<ScopeFilter, number> = {
+    "All connections": exceptions.length,
+    "The Organization": exceptions.filter((record) => record.customerScope === "The Organization")
+      .length,
+    "Internal only": exceptions.filter((record) => record.customerScope === "Internal only").length,
+  };
+  const scoped =
+    scope === "All connections"
+      ? exceptions
+      : exceptions.filter((record) => record.customerScope === scope);
+  const unavailable = scenario === "invalid";
+  const dataClassesFor = (connectionId: string) => {
+    const classes = trafficVolumeRecords
+      .filter((volume) => volume.connectionId === connectionId)
+      .map((volume) => volume.dataClass);
+    return classes.length ? [...new Set(classes)].join(", ") : "Not available";
+  };
+
+  return (
+    <>
+      <PageIntro
+        eyebrow="Migration management workspace · Sprint 2"
+        title="Classical Fallback Exceptions"
+        description="Review operational dependency and potential HNDL exposure together. Simulated acceptance never removes residual security exposure."
+      />
+      <div className="notice notice-amber exception-principle">
+        <Icon name="shield" />
+        <div>
+          <strong>Exception status does not remove potential exposure</strong>
+          <p>
+            “Accepted in simulation” is a prototype scenario label—not approval by a real security
+            authority. No controls on this page authorize exceptions or terminate connections.
+          </p>
+        </div>
+      </div>
+      <ScopeTabs value={scope} onChange={setScope} counts={counts} />
+      <section className="metric-grid three">
+        <MetricCard
+          label="Fallback exceptions"
+          value={unavailable ? "—" : scoped.length}
+          detail={`Selected scope: ${scope}`}
+          tone="amber"
+        />
+        <MetricCard
+          label="Customer deadline relevant"
+          value={
+            unavailable
+              ? "—"
+              : scoped.filter((record) => record.customerScope === "The Organization").length
+          }
+          detail="Proposed 31 December 2027"
+        />
+        <MetricCard
+          label="Potential HNDL exposure"
+          value={unavailable ? "Unknown" : scoped.length}
+          detail="Visible regardless of simulated status"
+          tone="amber"
+        />
+      </section>
+      <section className="panel exception-table-panel">
+        <div className="table-toolbar">
+          <div>
+            <span className="eyebrow">Internal exception register</span>
+            <h2>Security exposure and service continuity</h2>
+            <p>Synthetic review fields · MEM-18 · MEM-50–53</p>
+          </div>
+          <button className="button button-secondary" onClick={() => onNavigate("blockers")}>
+            View blockers
+          </button>
+        </div>
+        {unavailable || scoped.length === 0 ? (
+          <EmptyState
+            title={unavailable ? "Exception assessment unavailable" : "No fallback exceptions"}
+            description={
+              unavailable
+                ? "Exception fields could not be validated."
+                : "No classical fallback records exist in the selected scope."
+            }
+          />
+        ) : (
+          <div className="table-scroll">
+            <table className="exception-table">
+              <thead>
+                <tr>
+                  <th>Connection</th>
+                  <th>Scope & data class</th>
+                  <th>Fallback reason</th>
+                  <th>Legacy dependency</th>
+                  <th>Consequence if disabled</th>
+                  <th>Security exposure</th>
+                  <th>Simulated status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scoped.map((record) => (
+                  <tr key={record.id}>
+                    <td>
+                      <strong>{record.customerRef ?? record.id}</strong>
+                      <small>{record.customerRef ? record.id : "Synthetic connection"}</small>
+                    </td>
+                    <td>
+                      <Badge
+                        tone={record.customerScope === "The Organization" ? "blue" : "neutral"}
+                      >
+                        {record.customerScope === "The Organization"
+                          ? "Customer data"
+                          : "Internal only"}
+                      </Badge>
+                      <small className="table-subline">{dataClassesFor(record.id)}</small>
+                    </td>
+                    <td>{record.fallbackReason ?? "Unknown"}</td>
+                    <td>
+                      {record.expectedReplacementAvailability
+                        ? `Certified replacement expected ${record.expectedReplacementAvailability}`
+                        : (record.primaryMigrationBlocker ?? "Unknown")}
+                    </td>
+                    <td>{record.monitoringImpactIfDisabled ?? "Unknown"}</td>
+                    <td>
+                      <span className="exposure-label">
+                        <Icon name="shield" size={15} /> Potential HNDL exposure
+                      </span>
+                    </td>
+                    <td>
+                      <Badge
+                        tone={
+                          record.simulatedExceptionStatus === "Accepted in simulation"
+                            ? "blue"
+                            : record.simulatedExceptionStatus === "Pending assessment"
+                              ? "amber"
+                              : "neutral"
+                        }
+                      >
+                        {record.simulatedExceptionStatus ?? "Unknown"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="table-footer">
+          <span>
+            Customer scope is explicit; internal-only exceptions are excluded from the customer
+            report.
+          </span>
+          <span>Potential exposure is an indicator, not evidence of an attack.</span>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function CustomerReport({
+  records,
+  scenario,
+  onBack,
+}: {
+  records: Connection[];
+  scenario: ScenarioId;
+  onBack: () => void;
+}) {
+  const customerRecords = records.filter((record) => record.customerScope === "The Organization");
+  const metrics = calculateCustomerMetrics(records);
+  const traffic = calculateTrafficMetrics(customerRecords);
+  const unavailable = scenario === "empty" || scenario === "invalid";
+  const customerClassical = customerRecords.filter((record) => record.protocol === "Classical");
+
+  return (
+    <div className="customer-report-shell">
+      <header className="report-preview-bar">
+        <button className="button button-secondary" onClick={onBack}>
+          <Icon name="arrow" size={16} /> Back to internal dashboard
+        </button>
+        <div>
+          <strong>Customer Report Preview</strong>
+          <span>Customer-safe presentation frame · design demonstration only</span>
+        </div>
+        <Badge tone="blue">Illustrative / Synthetic Data</Badge>
+      </header>
+      <main className="customer-report">
+        <section className="report-header">
+          <div>
+            <span className="report-kicker">Sample report · 14 June 2025</span>
+            <h1>Customer PQC Readiness Report</h1>
+            <p>
+              Prepared for <strong>The Organization</strong>
+            </p>
+          </div>
+          <div className="report-mark">
+            <Icon name="shield" size={25} />
+            <span>PQC readiness</span>
+          </div>
+        </section>
+        <section className="report-deadline">
+          <span className="report-deadline-icon">
+            <Icon name="clock" size={26} />
+          </span>
+          <div>
+            <span>Proposed PQC deadline</span>
+            <strong>31 December 2027</strong>
+          </div>
+          <div>
+            <span>Previous proposed schedule</span>
+            <strong>31 December 2030</strong>
+          </div>
+          <Badge tone="amber">Contract amendment pending</Badge>
+        </section>
+
+        <section className="report-kpis">
+          <article className="report-kpi primary">
+            <div className="report-kpi-icon">
+              <Icon name="shield" size={24} />
+            </div>
+            <span>Customer PQC connection adoption</span>
+            <strong>
+              {unavailable || metrics.coverage === null
+                ? "Not available"
+                : `${metrics.coverage.toFixed(1)}%`}
+            </strong>
+            <p>
+              {unavailable
+                ? "Valid customer-scoped connection data is required."
+                : `${metrics.mlkem} of ${metrics.total} eligible customer connections use ML-KEM.`}
+            </p>
+            <div className="report-progress">
+              <span style={{ width: `${metrics.coverage ?? 0}%` }} />
+            </div>
+            <small>PQC connections / Eligible customer connections</small>
+          </article>
+          <article className="report-kpi exposure">
+            <div className="report-kpi-icon">
+              <Icon name="info" size={24} />
+            </div>
+            <span>Data volume associated with classical connections</span>
+            <strong>
+              {unavailable || traffic.classicalShare === null
+                ? "Not available"
+                : `${traffic.classicalShare.toFixed(1)}%`}
+            </strong>
+            <p>
+              {unavailable
+                ? "Valid customer volume data is required."
+                : `${traffic.classicalVolume} GB of ${traffic.totalVolume} GB in the sample period.`}
+            </p>
+            <div className="measure-distinction">
+              <Icon name="info" size={15} />
+              Volume share—not connection adoption
+            </div>
+          </article>
+          <article className="report-kpi scope">
+            <div className="report-kpi-icon">
+              <Icon name="connections" size={21} />
+            </div>
+            <span>Customer connection scope</span>
+            <strong>{unavailable ? "—" : metrics.total}</strong>
+            <p>
+              {metrics.mlkem} ML-KEM · {metrics.classical} classical
+            </p>
+            <small>Internal-only records excluded</small>
+          </article>
+        </section>
+
+        <section className="report-section">
+          <div className="report-section-heading">
+            <span className="report-section-icon">
+              <Icon name="database" size={20} />
+            </span>
+            <div className="report-section-title">
+              <span>Customer exposure summary</span>
+              <h2>Potential HNDL Exposure by Data Class</h2>
+            </div>
+            <Badge tone="amber">Potential exposure · Not a detected attack</Badge>
+          </div>
+          {unavailable ? (
+            <EmptyState
+              title="Exposure calculation unavailable"
+              description="Valid customer-scoped volume records are required."
+            />
+          ) : (
+            <div className="report-exposure-grid">
+              <div className="report-table-wrap">
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      <th>Data class</th>
+                      <th>Total volume</th>
+                      <th>Classical-associated volume</th>
+                      <th>Potentially exposed share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {traffic.byClass.map((item) => (
+                      <tr key={item.dataClass}>
+                        <td>
+                          <strong>{item.dataClass}</strong>
+                        </td>
+                        <td>{item.total} GB</td>
+                        <td>{item.potentiallyExposed} GB</td>
+                        <td>
+                          <strong>{item.percentage?.toFixed(1)}%</strong>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="total-row">
+                      <td>
+                        <strong>Total</strong>
+                      </td>
+                      <td>
+                        <strong>{traffic.totalVolume} GB</strong>
+                      </td>
+                      <td>
+                        <strong>{traffic.classicalVolume} GB</strong>
+                      </td>
+                      <td>
+                        <strong>{traffic.classicalShare?.toFixed(1)}%</strong>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="report-data-coverage">
+                  Volume coverage: supplied for all 5 eligible customer connections in this
+                  illustrative scenario. If any required customer volume is missing, the complete
+                  exposure percentage must be withheld or explicitly qualified.
+                </div>
+              </div>
+              <div className="exposure-bars">
+                {traffic.byClass.map((item) => (
+                  <div key={item.dataClass}>
+                    <span>
+                      <b>{item.dataClass}</b>
+                      <strong>
+                        {item.potentiallyExposed} / {item.total} GB
+                      </strong>
+                    </span>
+                    <div>
+                      <i style={{ width: `${item.percentage ?? 0}%` }} />
+                    </div>
+                  </div>
+                ))}
+                <p>
+                  Volume is calculated from supplied customer data-class records; it is not
+                  estimated from connection counts.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="report-two-column">
+          <article className="report-section dependency-card">
+            <span className="report-card-icon amber">
+              <Icon name="clock" size={20} />
+            </span>
+            <span className="eyebrow">Migration dependencies</span>
+            <h2>Legacy replacement timing needs discussion</h2>
+            <p>
+              Some legacy devices may depend on certified replacements expected in 2028, which is
+              later than the proposed 2027 customer deadline.
+            </p>
+            <div className="dependency-record">
+              <span>Applicable customer connection</span>
+              <strong>
+                {customerClassical.find(
+                  (record) => record.expectedReplacementAvailability === "2028",
+                )?.customerRef ?? "Not available"}
+              </strong>
+              <Badge tone="amber">Expected 2028</Badge>
+            </div>
+            <small>
+              This does not establish that migration is impossible or that the proposed deadline
+              cannot be met.
+            </small>
+          </article>
+          <article className="report-section next-steps-card">
+            <span className="report-card-icon blue">
+              <Icon name="arrow" size={20} />
+            </span>
+            <span className="eyebrow">Next steps for discussion</span>
+            <h2>Topics for the next review</h2>
+            <ol>
+              <li>Review customer connections still using classical key establishment.</li>
+              <li>Assess legacy replacement dependencies.</li>
+              <li>Discuss migration options for the proposed deadline.</li>
+              <li>Confirm reporting details and contractual requirements.</li>
+            </ol>
+            <small>Discussion items only · No corrective action is represented as approved.</small>
+          </article>
+        </section>
+        <section className="report-limitations">
+          <Icon name="info" size={18} />
+          <div>
+            <strong>Assumptions and limitations</strong>
+            <p>
+              This report uses synthetic example data. Potential HNDL exposure does not indicate a
+              detected attack or confirmed interception. The proposed contractual deadline has not
+              yet been accepted. Internal-only connections, internal assessments, budgets, and other
+              customer information are excluded.
+            </p>
+          </div>
+        </section>
+        <footer className="report-footer">
+          <span>The Organization · Customer-scoped synthetic records only</span>
+          <span>Sample report · Page 1 of 1</span>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+function Sprint2Traceability() {
+  const rows = [
+    [
+      "Security workflow",
+      "MEM-36, MEM-37, MEM-38",
+      "Classical traffic metric, source table, calculation and unknown state",
+    ],
+    [
+      "Migration blockers",
+      "MEM-17, MEM-46–49",
+      "Scope filters, primary blocker totals, dependency table and 2027/2028 conflict",
+    ],
+    [
+      "Fallback exceptions",
+      "MEM-18, MEM-50–53",
+      "Exception register, continuity impact, simulated status and persistent exposure",
+    ],
+    [
+      "Customer report",
+      "MEM-92, MEM-93–96",
+      "Customer-scoped coverage, data-class exposure, deadline and report preview",
+    ],
+  ];
+  return (
+    <>
+      <PageIntro
+        eyebrow="Sprint 2 implementation handoff"
+        title="Jira Requirements Traceability"
+        description="A compact map from each Sprint 2 dashboard requirement to its implemented prototype deliverable and validation evidence."
+      />
+      <div className="notice notice-neutral">
+        <Icon name="info" />
+        <div>
+          <strong>Design evidence—not Jira completion</strong>
+          <p>
+            This page does not change issue status, establish Product Owner acceptance, or imply
+            that theoretical and documentation work has been completed outside the prototype.
+          </p>
+        </div>
+      </div>
+      <section className="panel traceability-panel">
+        <div className="traceability-header">
+          <span>Sprint 2 dashboard scope</span>
+          <strong>18 mapped Jira issues</strong>
+          <Badge tone="blue">Review-ready prototype</Badge>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Design area</th>
+                <th>Jira references</th>
+                <th>Prototype deliverable</th>
+                <th>Validation evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row[0]}>
+                  <td>
+                    <strong>{row[0]}</strong>
+                  </td>
+                  <td>
+                    <Badge tone="blue">{row[1]}</Badge>
+                  </td>
+                  <td>{row[2]}</td>
+                  <td>
+                    <span className="trace-check">
+                      <Icon name="check" size={14} /> Present in prototype
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="validation-grid">
+        {[
+          [
+            "Customer scoping",
+            "5 customer records; 7 internal-only records remain excluded from the report.",
+          ],
+          [
+            "Distinct denominators",
+            "60% connection adoption and 20% classical-associated volume share are separately labeled.",
+          ],
+          [
+            "Schedule conflict",
+            "Proposed 31 Dec 2027 is shown alongside expected replacement availability in 2028.",
+          ],
+          [
+            "Residual exposure",
+            "Accepted in simulation never removes the Potential HNDL Exposure label.",
+          ],
+          ["Missing inputs", "Unknown and Not available are used instead of inferred zero values."],
+          [
+            "Customer safety",
+            "No internal-only exceptions, budgets, internal risk ranking, or other customer data appears.",
+          ],
+        ].map(([title, copy]) => (
+          <article className="panel validation-card" key={title}>
+            <span>
+              <Icon name="check" size={15} />
+            </span>
+            <div>
+              <strong>{title}</strong>
+              <p>{copy}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+      <section className="panel calculation-ledger">
+        <div>
+          <span className="eyebrow">Calculation notes</span>
+          <h2>Reviewer-verifiable synthetic arithmetic</h2>
+        </div>
+        <code>Customer coverage: 3 ML-KEM ÷ 5 eligible = 60%</code>
+        <code>Personal exposure: 40 GB ÷ 100 GB = 40%</code>
+        <code>Operational exposure: 20 GB ÷ 200 GB = 10%</code>
+        <code>Overall volume share: 60 GB ÷ 300 GB = 20%</code>
+      </section>
+    </>
+  );
+}
+
+const processSections = [
+  {
+    id: "MEM-72 / PROC-01",
+    title: "Team working agreement & rotating Scrum roles",
+    description:
+      "Document how the team intends to collaborate. Attach evidence only after agreement.",
+    content: [
+      "Roles matrix: Member · Sprint role · Rotation",
+      "Communication: Channel · Cadence · Response expectation",
+      "Agreement evidence: [Link / screenshot placeholder]",
+    ],
+  },
+  {
+    id: "MEM-73 / PROC-02",
+    title: "Product vision & stakeholder-conflict matrix",
+    description:
+      "Make stakeholder tensions visible instead of resolving them through oversimplification.",
+    content: [
+      "Sarah: inspect residual exposure · challenges reassuring summaries",
+      "Michael: communicate progress · account for legacy constraints",
+      "Emma: understand attention needed · protect continuity and commitments",
+    ],
+  },
+  {
+    id: "MEM-74 / PROC-03",
+    title: "Risk register",
+    description: "Proposed risks remain unassessed until the team reviews them.",
+    table: ["Risk", "Likelihood", "Impact", "Mitigation", "Owner", "Status"],
+  },
+  {
+    id: "MEM-75 / PROC-04",
+    title: "Decision log",
+    description: "Record decisions only when they occur; do not infer approval.",
+    table: ["Date", "Alternatives", "Decision", "Rationale", "Owner", "Approval"],
+  },
+  {
+    id: "MEM-76 / PROC-05",
+    title: "Change & Product Owner feedback log",
+    description: "Trace feedback to backlog and stakeholder impact.",
+    table: ["Change description", "Backlog effect", "Stakeholder impacts", "Decision status"],
+  },
+  {
+    id: "MEM-77 / PROC-S1-PLAN",
+    title: "Sprint 1 planning record",
+    description: "Goal: deliver a coherent first dashboard increment for three stakeholder needs.",
+    content: [
+      "Sarah · Masoud · 5 provisional points",
+      "Michael · Alireza · 3 provisional points",
+      "Emma · Niko · 3 provisional points",
+      "Process coordination · Roope",
+      "Actual planning agreement: [To be recorded]",
+    ],
+  },
+  {
+    id: "MEM-78 / PROC-S1-REVIEW",
+    title: "Sprint review template",
+    description: "Compare planned and delivered scope without pre-claiming acceptance.",
+    table: ["Story", "Planned", "Delivered", "Acceptance result", "PO feedback"],
+  },
+  {
+    id: "MEM-79 / PROC-S1-RETRO",
+    title: "Retrospective template",
+    description: "Turn reflection into owned Sprint 2 follow-up.",
+    table: ["What went well", "What didn’t", "Action", "Owner", "Sprint 2 follow-up"],
+  },
+  {
+    id: "MEM-80 / PROC-S1-SUBMIT",
+    title: "Submission checklist",
+    description: "Completion must be evidenced by the team; template presence is not submission.",
+    content: ["Five-minute video", "Slides PDF", "500-word report", "LLM evaluation evidence"],
+  },
+];
+
+function ProcessEvidence() {
+  return (
+    <>
+      <PageIntro
+        eyebrow="Internal course workspace · Roope"
+        title="Sprint 1 — Process & Evidence"
+        description="Presentation-ready templates for team activities. These are not stakeholder-facing product features and do not imply the work is complete."
+      />
+      <div className="notice notice-neutral">
+        <Icon name="info" />
+        <div>
+          <strong>Templates, not completion evidence</strong>
+          <p>
+            Meetings, Jira records, written reports, approvals, and course submission must still be
+            conducted and maintained by the team.
+          </p>
+        </div>
+      </div>
+      <section className="planning-summary">
+        <div>
+          <span>Provisional scope</span>
+          <strong>3 user stories</strong>
+        </div>
+        <div>
+          <span>Provisional estimate</span>
+          <strong>11 story points</strong>
+        </div>
+        <div>
+          <span>Process coordinator</span>
+          <strong>Roope</strong>
+        </div>
+        <div>
+          <span>Evidence status</span>
+          <strong>Awaiting team input</strong>
+        </div>
+      </section>
+      <section className="process-grid">
+        {processSections.map((section, index) => (
+          <article className="process-card" key={section.id}>
+            <div className="process-number">{String(index + 1).padStart(2, "0")}</div>
+            <Badge tone="blue">{section.id}</Badge>
+            <h2>{section.title}</h2>
+            <p>{section.description}</p>
+            {section.content && (
+              <div className="template-list">
+                {section.content.map((item) => (
+                  <div key={item}>
+                    <span className="empty-check" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+            {section.table && (
+              <div className="mini-table">
+                <div>
+                  {section.table.map((heading) => (
+                    <strong key={heading}>{heading}</strong>
+                  ))}
+                </div>
+                <div>
+                  {section.table.map((heading) => (
+                    <span key={heading}>TBD</span>
+                  ))}
+                </div>
+                <div>
+                  {section.table.map((heading) => (
+                    <span key={heading}>TBD</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="evidence-slot">
+              <Icon name="file" size={16} /> Evidence / notes placeholder
+            </div>
+          </article>
+        ))}
+      </section>
+    </>
+  );
+}
+
 const guideSections = [
   {
     number: "01",
     title: "Purpose and product boundaries",
     summary: "What this prototype represents—and what it deliberately does not claim.",
     points: [
-      "A Sprint 1 decision-support prototype for reviewing an illustrative migration from classical key exchange to ML-KEM.",
+      "An integrated Sprint 1 and Sprint 2 decision-support prototype for reviewing an illustrative migration from classical key exchange to ML-KEM.",
       "All records are fictional, locally stored, and shared across every product view.",
       "The interface does not monitor live traffic, detect attacks, control devices, or perform cryptographic assessment.",
       "No backend, external API, authentication service, or operational network connection is used.",
@@ -1115,7 +2244,8 @@ const guideSections = [
       "Overview provides a fast management summary of status, migration coverage, residual fallback, and data scope.",
       "Connections provides the complete assessed inventory, protocol filtering, connection search, exposure context, and record details.",
       "Migration explains the exact coverage calculation, denominator, protocol comparison, and adoption progress.",
-      "Prototype Guide and Design System are supporting resources and are intentionally separated from primary product navigation.",
+      "Blockers and Fallback Exceptions are internal planning views. Customer Report Preview opens a separate customer-safe presentation without internal navigation.",
+      "Prototype Guide, Design System, and Process & Evidence are supporting resources and are intentionally separated from primary product navigation.",
     ],
   },
   {
@@ -1125,6 +2255,8 @@ const guideSections = [
       "The single source of truth behind all counts, percentages, tables, and status signals.",
     points: [
       "The standard snapshot contains 12 assessed connections: 8 ML-KEM and 4 classical fallback.",
+      "Five connections carry The Organization’s data: 3 ML-KEM and 2 classical. The remaining seven are explicitly internal only.",
+      "Ten customer volume rows total 300 GB across two data classes; 60 GB is associated with the two classical customer connections.",
       "Coverage uses all 12 supplied records, including active and inactive connections; the denominator never changes silently.",
       "One record intentionally has no supplied IP address and is shown as “Not provided” rather than inferred.",
       "The dataset is defined in src/data.ts so it can be replaced or extended without rewriting individual screens.",
@@ -1151,6 +2283,7 @@ const guideSections = [
       "Search matches the supplied connection ID. A nonexistent ID produces a no-results state with a clear reset action.",
       "Selecting a row opens a detail panel containing only fields present in the synthetic record.",
       "Potential HNDL exposure appears only on classical fallback rows. It is not evidence of harvesting, unencrypted traffic, or malicious downgrade.",
+      "The Sprint 2 traffic metric is a 60 GB customer subtotal. Internal-only classical volume is unknown, so no company-wide volume total is claimed.",
     ],
   },
   {
@@ -1163,6 +2296,7 @@ const guideSections = [
       "Secondary cards, progress indicator, formula panel, and comparison chart are derived from the same records.",
       "When the assessed population is zero, the result is Not available—not 0%, NaN, or infinity.",
       "Migration coverage indicates adoption; it does not establish overall security readiness.",
+      "Customer connection adoption is 3 ÷ 5 = 60%; customer classical-associated volume share is 60 ÷ 300 = 20%. These are deliberately separate measures.",
     ],
   },
   {
@@ -1187,6 +2321,7 @@ const guideSections = [
       "From Migration, Inspect classical fallback connections opens the same filtered inventory.",
       "Within Connections, protocol tabs and Clear filters move between 12, 8, and 4-record views.",
       "Changing the scenario updates all three product destinations from the same underlying scenario records.",
+      "Blockers links to Fallback Exceptions, while the internal sidebar opens a distinct Customer Report Preview frame.",
     ],
   },
   {
@@ -1202,12 +2337,25 @@ const guideSections = [
   },
   {
     number: "10",
-    title: "Sprint 1 exclusions and handoff",
+    title: "Sprint 2 boundaries and handoff",
     summary: "What should not be interpreted as implemented functionality.",
     points: [
-      "Downgrade investigation, response actions, blocker analysis, budget analytics, risk ranking, notifications, and network-zone heatmaps are outside Sprint 1.",
+      "Downgrade investigation, live response actions, budget analytics, Top 3 organizational risks, notifications, and network-zone heatmaps remain out of scope.",
+      "The 31 December 2027 date is a proposed contract amendment, simulated exception statuses are not approvals, and 2028 replacement timing is not a claim that migration is impossible.",
       "The Design System page documents shared tokens and reusable component states.",
+      "Process & Evidence contains fill-in templates only; it does not prove meetings, approvals, Jira maintenance, reports, or submission occurred.",
       "Implementation ownership can be divided by product view while preserving src/data.ts and shared UI conventions as common dependencies.",
+    ],
+  },
+  {
+    number: "11",
+    title: "Customer report separation",
+    summary: "How customer-safe reporting remains distinct from internal decision support.",
+    points: [
+      "The report includes only five records scoped to The Organization and excludes all seven internal-only records.",
+      "It shows customer adoption, exposure by data class, the pending deadline amendment, dependencies, discussion topics, and limitations.",
+      "It does not include internal exception records, budgets, organizational risk rankings, other customer information, or confidential negotiation assessments.",
+      "The separate presentation frame demonstrates information architecture only; it does not claim production authentication or access control.",
     ],
   },
 ];
@@ -1218,11 +2366,11 @@ function PrototypeGuide() {
       <PageIntro
         eyebrow="Prototype documentation"
         title="Prototype Guide"
-        description="A detailed reference for understanding, demonstrating, validating, and handing off every part of the Sprint 1 prototype."
+        description="A detailed reference for understanding, demonstrating, validating, and handing off the integrated Sprint 1 and Sprint 2 prototype."
       />
       <section className="guide-hero">
         <div>
-          <Badge tone="blue">Sprint 1 reference</Badge>
+          <Badge tone="blue">Sprint 1 + Sprint 2 reference</Badge>
           <h2>Start here before the demonstration</h2>
           <p>
             This guide explains the prototype’s data, calculations, status behavior, interactions,
@@ -1232,7 +2380,7 @@ function PrototypeGuide() {
         </div>
         <div className="guide-facts">
           <span>
-            <strong>3</strong> product views
+            <strong>6</strong> product views
           </span>
           <span>
             <strong>7</strong> test scenarios
@@ -1413,6 +2561,12 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  if (page === "customer-report") {
+    return (
+      <CustomerReport records={records} scenario={scenario} onBack={() => navigate("overview")} />
+    );
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -1443,11 +2597,19 @@ export default function App() {
           {page === "migration" && (
             <Migration records={records} scenario={scenario} onNavigate={navigate} />
           )}
+          {page === "blockers" && (
+            <MigrationBlockers records={records} scenario={scenario} onNavigate={navigate} />
+          )}
+          {page === "exceptions" && (
+            <FallbackExceptions records={records} scenario={scenario} onNavigate={navigate} />
+          )}
           {page === "guide" && <PrototypeGuide />}
+          {page === "traceability" && <Sprint2Traceability />}
+          {page === "process" && <ProcessEvidence />}
           {page === "system" && <DesignSystem />}
         </main>
         <footer className="app-footer">
-          <span>PQC Security Monitoring Dashboard · Sprint 1 educational prototype</span>
+          <span>PQC Security Monitoring Dashboard · Sprint 2 educational prototype</span>
           <span>Synthetic data · Not a live monitoring platform</span>
         </footer>
       </div>
