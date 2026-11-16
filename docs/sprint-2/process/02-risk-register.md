@@ -33,3 +33,10 @@ We retained Sprint 1 risks and reassessed their relevance after the customer's p
 For each active risk at the team meeting: confirm the condition, discuss likelihood/impact, appoint an accountable owner, choose an action, and record a re-check date. The course requires maintaining the register; it does not prescribe an unsupported numerical score. The customer deadline is a *proposed* contractual amendment.
 
 **Evidence:** [Sprint 2 requirement slide](https://aliz.atlassian.net/browse/MEM-76); [V2 source](https://github.com/Aliz-f/pqc-dashboard/tree/v2); [18 passing tests and build](https://github.com/Aliz-f/pqc-dashboard/actions/runs/43916024168); [whole-sprint review](../team-review-2026-11-16.md).
+
+
+## Sprint 2 retrospective update — team-reported (16 November 2026)
+
+The team reports that **meeting scheduling and workload balance improved**, and that **Tancredi's remote participation in Sprint 2 was effective and improved work quality**. This updates the working status of **R01** from the earlier Sprint 1 hybrid-collaboration concern: the team experienced an improvement, while maintaining a check on equitable remote participation in Sprint 3. This is not a claim that any pending lecturer decision about the formal group arrangement was made.
+
+The team also reports **better Jira alignment**. The Sprint 3 improvement actions cover residual risks: insufficient manual-browser acceptance evidence ([MEM-97](https://aliz.atlassian.net/browse/MEM-97)), cross-sprint dependency ambiguity ([MEM-98](https://aliz.atlassian.net/browse/MEM-98)) and delayed recording of requirement/PO decisions ([MEM-99](https://aliz.atlassian.net/browse/MEM-99)). Track their outcomes at [MEM-87](https://aliz.atlassian.net/browse/MEM-87).
