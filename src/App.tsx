@@ -20,7 +20,6 @@ type Page =
   | "exceptions"
   | "customer-report"
   | "guide"
-  | "traceability"
   | "process"
   | "system";
 type ProtocolFilter = "All" | Protocol;
@@ -309,14 +308,6 @@ function Sidebar({
           </button>
           <button
             onClick={() => {
-              onNavigate("traceability");
-              onClose();
-            }}
-          >
-            S2 requirements traceability
-          </button>
-          <button
-            onClick={() => {
               onNavigate("system");
               onClose();
             }}
@@ -363,7 +354,6 @@ function Header({
     exceptions: "Classical fallback exceptions",
     "customer-report": "Customer report preview",
     guide: "Prototype guide",
-    traceability: "Sprint 2 requirements traceability",
     process: "Sprint 1 — Process & Evidence",
     system: "Design system",
   };
@@ -1943,132 +1933,6 @@ function CustomerReport({
   );
 }
 
-function Sprint2Traceability() {
-  const rows = [
-    [
-      "Security workflow",
-      "MEM-36, MEM-37, MEM-38",
-      "Classical traffic metric, source table, calculation and unknown state",
-    ],
-    [
-      "Migration blockers",
-      "MEM-17, MEM-46–49",
-      "Scope filters, primary blocker totals, dependency table and 2027/2028 conflict",
-    ],
-    [
-      "Fallback exceptions",
-      "MEM-18, MEM-50–53",
-      "Exception register, continuity impact, simulated status and persistent exposure",
-    ],
-    [
-      "Customer report",
-      "MEM-92, MEM-93–96",
-      "Customer-scoped coverage, data-class exposure, deadline and report preview",
-    ],
-  ];
-  return (
-    <>
-      <PageIntro
-        eyebrow="Sprint 2 implementation handoff"
-        title="Jira Requirements Traceability"
-        description="A compact map from each Sprint 2 dashboard requirement to its implemented prototype deliverable and validation evidence."
-      />
-      <div className="notice notice-neutral">
-        <Icon name="info" />
-        <div>
-          <strong>Design evidence—not Jira completion</strong>
-          <p>
-            This page does not change issue status, establish Product Owner acceptance, or imply
-            that theoretical and documentation work has been completed outside the prototype.
-          </p>
-        </div>
-      </div>
-      <section className="panel traceability-panel">
-        <div className="traceability-header">
-          <span>Sprint 2 dashboard scope</span>
-          <strong>18 mapped Jira issues</strong>
-          <Badge tone="blue">Review-ready prototype</Badge>
-        </div>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Design area</th>
-                <th>Jira references</th>
-                <th>Prototype deliverable</th>
-                <th>Validation evidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row[0]}>
-                  <td>
-                    <strong>{row[0]}</strong>
-                  </td>
-                  <td>
-                    <Badge tone="blue">{row[1]}</Badge>
-                  </td>
-                  <td>{row[2]}</td>
-                  <td>
-                    <span className="trace-check">
-                      <Icon name="check" size={14} /> Present in prototype
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <section className="validation-grid">
-        {[
-          [
-            "Customer scoping",
-            "5 customer records; 7 internal-only records remain excluded from the report.",
-          ],
-          [
-            "Distinct denominators",
-            "60% connection adoption and 20% classical-associated volume share are separately labeled.",
-          ],
-          [
-            "Schedule conflict",
-            "Proposed 31 Dec 2027 is shown alongside expected replacement availability in 2028.",
-          ],
-          [
-            "Residual exposure",
-            "Accepted in simulation never removes the Potential HNDL Exposure label.",
-          ],
-          ["Missing inputs", "Unknown and Not available are used instead of inferred zero values."],
-          [
-            "Customer safety",
-            "No internal-only exceptions, budgets, internal risk ranking, or other customer data appears.",
-          ],
-        ].map(([title, copy]) => (
-          <article className="panel validation-card" key={title}>
-            <span>
-              <Icon name="check" size={15} />
-            </span>
-            <div>
-              <strong>{title}</strong>
-              <p>{copy}</p>
-            </div>
-          </article>
-        ))}
-      </section>
-      <section className="panel calculation-ledger">
-        <div>
-          <span className="eyebrow">Calculation notes</span>
-          <h2>Reviewer-verifiable synthetic arithmetic</h2>
-        </div>
-        <code>Customer coverage: 3 ML-KEM ÷ 5 eligible = 60%</code>
-        <code>Personal exposure: 40 GB ÷ 100 GB = 40%</code>
-        <code>Operational exposure: 20 GB ÷ 200 GB = 10%</code>
-        <code>Overall volume share: 60 GB ÷ 300 GB = 20%</code>
-      </section>
-    </>
-  );
-}
-
 const processSections = [
   {
     id: "MEM-72 / PROC-01",
@@ -2604,7 +2468,6 @@ export default function App() {
             <FallbackExceptions records={records} scenario={scenario} onNavigate={navigate} />
           )}
           {page === "guide" && <PrototypeGuide />}
-          {page === "traceability" && <Sprint2Traceability />}
           {page === "process" && <ProcessEvidence />}
           {page === "system" && <DesignSystem />}
         </main>
