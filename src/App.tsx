@@ -20,7 +20,6 @@ type Page =
   | "exceptions"
   | "customer-report"
   | "guide"
-  | "process"
   | "system";
 type ProtocolFilter = "All" | Protocol;
 
@@ -314,14 +313,6 @@ function Sidebar({
           >
             Design system
           </button>
-          <button
-            onClick={() => {
-              onNavigate("process");
-              onClose();
-            }}
-          >
-            Process &amp; evidence
-          </button>
         </div>
         <div className="sidebar-footer">
           <span className="avatar">U</span>
@@ -354,7 +345,6 @@ function Header({
     exceptions: "Classical fallback exceptions",
     "customer-report": "Customer report preview",
     guide: "Prototype guide",
-    process: "Sprint 1 — Process & Evidence",
     system: "Design system",
   };
   return (
@@ -1933,161 +1923,6 @@ function CustomerReport({
   );
 }
 
-const processSections = [
-  {
-    id: "MEM-72 / PROC-01",
-    title: "Team working agreement & rotating Scrum roles",
-    description:
-      "Document how the team intends to collaborate. Attach evidence only after agreement.",
-    content: [
-      "Roles matrix: Member · Sprint role · Rotation",
-      "Communication: Channel · Cadence · Response expectation",
-      "Agreement evidence: [Link / screenshot placeholder]",
-    ],
-  },
-  {
-    id: "MEM-73 / PROC-02",
-    title: "Product vision & stakeholder-conflict matrix",
-    description:
-      "Make stakeholder tensions visible instead of resolving them through oversimplification.",
-    content: [
-      "Sarah: inspect residual exposure · challenges reassuring summaries",
-      "Michael: communicate progress · account for legacy constraints",
-      "Emma: understand attention needed · protect continuity and commitments",
-    ],
-  },
-  {
-    id: "MEM-74 / PROC-03",
-    title: "Risk register",
-    description: "Proposed risks remain unassessed until the team reviews them.",
-    table: ["Risk", "Likelihood", "Impact", "Mitigation", "Owner", "Status"],
-  },
-  {
-    id: "MEM-75 / PROC-04",
-    title: "Decision log",
-    description: "Record decisions only when they occur; do not infer approval.",
-    table: ["Date", "Alternatives", "Decision", "Rationale", "Owner", "Approval"],
-  },
-  {
-    id: "MEM-76 / PROC-05",
-    title: "Change & Product Owner feedback log",
-    description: "Trace feedback to backlog and stakeholder impact.",
-    table: ["Change description", "Backlog effect", "Stakeholder impacts", "Decision status"],
-  },
-  {
-    id: "MEM-77 / PROC-S1-PLAN",
-    title: "Sprint 1 planning record",
-    description: "Goal: deliver a coherent first dashboard increment for three stakeholder needs.",
-    content: [
-      "Sarah · Masoud · 5 provisional points",
-      "Michael · Alireza · 3 provisional points",
-      "Emma · Niko · 3 provisional points",
-      "Process coordination · Roope",
-      "Actual planning agreement: [To be recorded]",
-    ],
-  },
-  {
-    id: "MEM-78 / PROC-S1-REVIEW",
-    title: "Sprint review template",
-    description: "Compare planned and delivered scope without pre-claiming acceptance.",
-    table: ["Story", "Planned", "Delivered", "Acceptance result", "PO feedback"],
-  },
-  {
-    id: "MEM-79 / PROC-S1-RETRO",
-    title: "Retrospective template",
-    description: "Turn reflection into owned Sprint 2 follow-up.",
-    table: ["What went well", "What didn’t", "Action", "Owner", "Sprint 2 follow-up"],
-  },
-  {
-    id: "MEM-80 / PROC-S1-SUBMIT",
-    title: "Submission checklist",
-    description: "Completion must be evidenced by the team; template presence is not submission.",
-    content: ["Five-minute video", "Slides PDF", "500-word report", "LLM evaluation evidence"],
-  },
-];
-
-function ProcessEvidence() {
-  return (
-    <>
-      <PageIntro
-        eyebrow="Internal course workspace · Roope"
-        title="Sprint 1 — Process & Evidence"
-        description="Presentation-ready templates for team activities. These are not stakeholder-facing product features and do not imply the work is complete."
-      />
-      <div className="notice notice-neutral">
-        <Icon name="info" />
-        <div>
-          <strong>Templates, not completion evidence</strong>
-          <p>
-            Meetings, Jira records, written reports, approvals, and course submission must still be
-            conducted and maintained by the team.
-          </p>
-        </div>
-      </div>
-      <section className="planning-summary">
-        <div>
-          <span>Provisional scope</span>
-          <strong>3 user stories</strong>
-        </div>
-        <div>
-          <span>Provisional estimate</span>
-          <strong>11 story points</strong>
-        </div>
-        <div>
-          <span>Process coordinator</span>
-          <strong>Roope</strong>
-        </div>
-        <div>
-          <span>Evidence status</span>
-          <strong>Awaiting team input</strong>
-        </div>
-      </section>
-      <section className="process-grid">
-        {processSections.map((section, index) => (
-          <article className="process-card" key={section.id}>
-            <div className="process-number">{String(index + 1).padStart(2, "0")}</div>
-            <Badge tone="blue">{section.id}</Badge>
-            <h2>{section.title}</h2>
-            <p>{section.description}</p>
-            {section.content && (
-              <div className="template-list">
-                {section.content.map((item) => (
-                  <div key={item}>
-                    <span className="empty-check" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            )}
-            {section.table && (
-              <div className="mini-table">
-                <div>
-                  {section.table.map((heading) => (
-                    <strong key={heading}>{heading}</strong>
-                  ))}
-                </div>
-                <div>
-                  {section.table.map((heading) => (
-                    <span key={heading}>TBD</span>
-                  ))}
-                </div>
-                <div>
-                  {section.table.map((heading) => (
-                    <span key={heading}>TBD</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="evidence-slot">
-              <Icon name="file" size={16} /> Evidence / notes placeholder
-            </div>
-          </article>
-        ))}
-      </section>
-    </>
-  );
-}
-
 const guideSections = [
   {
     number: "01",
@@ -2109,7 +1944,7 @@ const guideSections = [
       "Connections provides the complete assessed inventory, protocol filtering, connection search, exposure context, and record details.",
       "Migration explains the exact coverage calculation, denominator, protocol comparison, and adoption progress.",
       "Blockers and Fallback Exceptions are internal planning views. Customer Report Preview opens a separate customer-safe presentation without internal navigation.",
-      "Prototype Guide, Design System, and Process & Evidence are supporting resources and are intentionally separated from primary product navigation.",
+      "Prototype Guide and Design System are supporting resources and are intentionally separated from primary product navigation.",
     ],
   },
   {
@@ -2207,7 +2042,6 @@ const guideSections = [
       "Downgrade investigation, live response actions, budget analytics, Top 3 organizational risks, notifications, and network-zone heatmaps remain out of scope.",
       "The 31 December 2027 date is a proposed contract amendment, simulated exception statuses are not approvals, and 2028 replacement timing is not a claim that migration is impossible.",
       "The Design System page documents shared tokens and reusable component states.",
-      "Process & Evidence contains fill-in templates only; it does not prove meetings, approvals, Jira maintenance, reports, or submission occurred.",
       "Implementation ownership can be divided by product view while preserving src/data.ts and shared UI conventions as common dependencies.",
     ],
   },
@@ -2468,7 +2302,6 @@ export default function App() {
             <FallbackExceptions records={records} scenario={scenario} onNavigate={navigate} />
           )}
           {page === "guide" && <PrototypeGuide />}
-          {page === "process" && <ProcessEvidence />}
           {page === "system" && <DesignSystem />}
         </main>
         <footer className="app-footer">

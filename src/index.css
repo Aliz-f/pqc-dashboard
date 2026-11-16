@@ -2662,133 +2662,6 @@ tr:hover .row-action {
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
-.planning-summary {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin-bottom: 18px;
-  overflow: hidden;
-  background: var(--navy-900);
-  border-radius: 12px;
-}
-.planning-summary div {
-  padding: 18px 20px;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-}
-.planning-summary span,
-.planning-summary strong {
-  display: block;
-}
-.planning-summary span {
-  color: #8fa5b8;
-  font-size: 9px;
-}
-.planning-summary strong {
-  margin-top: 4px;
-  color: #fff;
-  font-size: 13px;
-}
-.process-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-.process-card {
-  position: relative;
-  overflow: hidden;
-  padding: 24px;
-  background: #fff;
-  border: 1px solid var(--slate-200);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-.process-number {
-  position: absolute;
-  top: -8px;
-  right: 13px;
-  color: var(--slate-100);
-  font-size: 75px;
-  line-height: 1;
-  font-weight: 700;
-  pointer-events: none;
-}
-.process-card > .badge {
-  position: relative;
-}
-.process-card h2 {
-  position: relative;
-  margin-top: 14px;
-  font-size: 16px;
-}
-.process-card > p {
-  position: relative;
-  margin-top: 5px;
-  color: var(--slate-500);
-  font-size: 10px;
-}
-.template-list {
-  display: grid;
-  gap: 7px;
-  margin-top: 17px;
-}
-.template-list > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  color: var(--slate-600);
-  background: var(--slate-50);
-  border-radius: 6px;
-  font-size: 9px;
-}
-.empty-check {
-  width: 13px;
-  height: 13px;
-  flex: none;
-  border: 1px solid var(--slate-300);
-  border-radius: 3px;
-}
-.mini-table {
-  width: 100%;
-  overflow-x: auto;
-  margin-top: 17px;
-  border: 1px solid var(--slate-200);
-  border-radius: 7px;
-}
-.mini-table > div {
-  min-width: 450px;
-  display: grid;
-  grid-auto-columns: 1fr;
-  grid-auto-flow: column;
-  border-bottom: 1px solid var(--slate-200);
-}
-.mini-table > div:last-child {
-  border-bottom: 0;
-}
-.mini-table strong,
-.mini-table span {
-  padding: 8px;
-  border-right: 1px solid var(--slate-200);
-  font-size: 7px;
-}
-.mini-table strong {
-  color: var(--slate-600);
-  background: var(--slate-50);
-}
-.mini-table span {
-  color: var(--slate-400);
-  height: 30px;
-}
-.evidence-slot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 10px;
-  color: var(--slate-500);
-  border: 1px dashed var(--slate-300);
-  border-radius: 7px;
-  font-size: 9px;
-}
 .system-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -3120,9 +2993,6 @@ tr:hover .row-action {
     border-left: 0;
     border-top: 1px solid var(--slate-200);
   }
-  .process-grid {
-    grid-template-columns: 1fr;
-  }
   .guide-hero {
     grid-template-columns: 1fr;
     gap: 22px;
@@ -3259,9 +3129,6 @@ tr:hover .row-action {
   .formula-card {
     border-left: 0;
     border-top: 1px solid var(--slate-200);
-  }
-  .planning-summary {
-    grid-template-columns: repeat(2, 1fr);
   }
   .system-grid {
     grid-template-columns: 1fr;
@@ -3562,12 +3429,6 @@ tr:hover .row-action {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
-  }
-  .planning-summary {
-    grid-template-columns: 1fr;
-  }
-  .process-card {
-    padding: 20px;
   }
   .swatches {
     grid-template-columns: repeat(2, 1fr);
